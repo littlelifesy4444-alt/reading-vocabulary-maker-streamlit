@@ -1077,19 +1077,15 @@ with st.container(border=True):
             index=1,
         )
 
-    # Tablet/Android compatibility: use a single-file uploader without a browser-side
-    # extension filter. Some Android/Samsung file pickers return generic MIME types
-    # or behave unreliably with multi-select + accept filters. We validate the actual
-    # filename/MIME later in uploaded_files_to_source_parts().
+    # 성적분석기에서 실제로 사용한 것과 같은 단순한 단일 PDF 업로더
     uploaded_file = st.file_uploader(
-        "독해 자료 PDF / 이미지",
+        "독해 자료 PDF",
+        type=["pdf"],
         accept_multiple_files=False,
-        key="source_file_single",
-        help="PDF/JPG/JPEG/PNG/WEBP 1개를 선택하세요. 태블릿 호환성을 위해 한 번에 1개씩 받습니다.",
     )
 
     if uploaded_file is not None:
-        st.success(f"선택됨: {uploaded_file.name} ({uploaded_file.size / 1024 / 1024:.1f} MB)")
+        st.success(f"선택됨: {uploaded_file.name}")
         uploaded_files = [uploaded_file]
     else:
         uploaded_files = []
