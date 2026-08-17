@@ -67,7 +67,7 @@ def extract_text(file_bytes: bytes, start_page: int = 1, end_page: Optional[int]
         raise PdfExtractionError(f"PDF 텍스트 추출 중 오류가 발생했습니다: {e}")
 
 
-def truncate_text_for_ai(text: str, max_chars: int = 50000):
+def truncate_text_for_ai(text: str, max_chars: int = 14000):
     """
     텍스트가 너무 길 경우 AI 호출용으로 길이를 제한한다.
     반환값: (사용할 텍스트, 잘렸는지 여부)

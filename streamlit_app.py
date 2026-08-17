@@ -30,7 +30,7 @@ import validators
 
 st.set_page_config(page_title="Reading Vocabulary Maker", page_icon="📚", layout="centered")
 
-MODEL_OPTIONS = ["claude-sonnet-5", "claude-opus-4-8", "claude-haiku-4-5-20251001", "claude-fable-5"]
+MODEL_OPTIONS = ["gpt-5.6", "gpt-5.6-terra", "gpt-5.6-luna"]
 
 DEFAULTS = {
     "api_key": "",
@@ -126,16 +126,21 @@ def df_to_vocab_list(df):
 # 사이드바 - API 설정
 # ---------------------------------------------------------------------------
 
+# OpenAI API key: Streamlit Secrets의 OPENAI_API_KEY 사용
+try:
+    st.session_state["api_key"] = st.secrets.get("OPENAI_API_KEY", "")
+except Exception:
+    st.session_state["api_key"] = ""
+
 with st.sidebar:
     st.header("⚙️ AI 설정")
-    st.session_state["api_key"] = st.text_input(
-        "Anthropic API Key",
-        value=st.session_state["api_key"],
-        type="password",
-        help="Anthropic Console에서 발급받은 API 키를 입력하세요. 서버에는 저장되지 않습니다.",
-    )
+    if st.session_state["api_key"]:
+        st.success("OpenAI API 키 연결됨")
+    else:
+        st.error("Streamlit Secrets에 OPENAI_API_KEY를 설정해주세요.")
     st.session_state["model"] = st.selectbox(
-        "모델", MODEL_OPTIONS, index=MODEL_OPTIONS.index(st.session_state["model"])
+        "모델", MODEL_OPTIONS,
+        index=MODEL_OPTIONS.index(st.session_state["model"])
         if st.session_state["model"] in MODEL_OPTIONS else 0,
     )
     st.divider()
@@ -216,7 +221,7 @@ analyze_disabled = not (
     and st.session_state["pdf_total_pages"] > 0
 )
 if analyze_disabled:
-    st.info("API 키, 제목, PDF 업로드를 먼저 완료해주세요.")
+    st.info("OpenAI API 키, 제목, PDF 업로드를 먼저 완료해주세요.")
 
 if st.button("🔍 PDF 분석 및 Vocabulary List 생성", disabled=analyze_disabled, use_container_width=True):
     with st.spinner("PDF에서 텍스트를 추출하는 중..."):

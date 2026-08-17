@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ai_engine.py
-Anthropic Claude API를 호출하여
+OpenAI API를 호출하여
   1) 지문에서 Vocabulary List 후보를 생성하고
   2) 승인된 Vocabulary List를 기준으로 MASTER MANUAL v1.0 5장 규격의
      30문항 Vocabulary Review Test를 생성한다.
@@ -14,7 +14,7 @@ Word 템플릿/Python 코드(docx_builder.py)가 담당한다. 이 모듈은 절
 import json
 import re
 
-import anthropic
+from openai import OpenAI, APIConnectionError, APIStatusError
 
 
 class AIEngineError(Exception):
@@ -40,10 +40,10 @@ DIFFICULTY_GUIDE = {
 }
 
 
-def get_client(api_key: str) -> anthropic.Anthropic:
+def get_client(api_key: str) -> OpenAI:
     if not api_key or not api_key.strip():
-        raise AIEngineError("Anthropic API 키가 입력되지 않았습니다.")
-    return anthropic.Anthropic(api_key=api_key.strip())
+        raise AIEngineError("OpenAI API 키가 설정되지 않았습니다.")
+    return OpenAI(api_key=api_key.strip())
 
 
 def _extract_json(text: str):
@@ -84,23 +84,25 @@ def _extract_json(text: str):
     raise AIEngineError("AI 응답에서 완전한 JSON을 찾지 못했습니다 (응답이 잘렸을 수 있습니다).", raw_response=text)
 
 
-def _call_claude(client, model, system_prompt, user_prompt, max_tokens):
+def _call_openai(client, model, system_prompt, user_prompt, max_tokens):
+    """OpenAI Responses API를 호출하고 텍스트 응답을 반환한다."""
     try:
-        response = client.messages.create(
+        response = client.responses.create(
             model=model,
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
+            instructions=system_prompt,
+            input=user_prompt,
+            max_output_tokens=max_tokens,
         )
-    except anthropic.APIStatusError as e:
-        raise AIEngineError(f"Anthropic API 오류 (status {e.status_code}): {e.message}")
-    except anthropic.APIConnectionError as e:
-        raise AIEngineError(f"Anthropic API 연결 오류: {e}")
+    except APIStatusError as e:
+        status = getattr(e, "status_code", "unknown")
+        message = getattr(e, "message", str(e))
+        raise AIEngineError(f"OpenAI API 오류 (status {status}): {message}")
+    except APIConnectionError as e:
+        raise AIEngineError(f"OpenAI API 연결 오류: {e}")
     except Exception as e:
-        raise AIEngineError(f"Anthropic API 호출 중 알 수 없는 오류: {e}")
+        raise AIEngineError(f"OpenAI API 호출 중 오류: {e}")
 
-    text_parts = [block.text for block in response.content if getattr(block, "type", None) == "text"]
-    full_text = "\n".join(text_parts).strip()
+    full_text = (getattr(response, "output_text", "") or "").strip()
     if not full_text:
         raise AIEngineError("AI가 빈 응답을 반환했습니다.")
     return full_text
@@ -151,7 +153,7 @@ def extract_vocabulary(client, model, title, passage_text, target_count_hint=0):
 
 위 지문을 분석하여 Vocabulary List를 JSON 배열로만 출력하세요."""
 
-    raw = _call_claude(client, model, VOCAB_SYSTEM_PROMPT, user_prompt, max_tokens=6000)
+    raw = _call_openai(client, model, VOCAB_SYSTEM_PROMPT, user_prompt, max_tokens=6000)
     data = _extract_json(raw)
 
     if not isinstance(data, list):
@@ -267,7 +269,7 @@ def generate_test(client, model, title, passage_text, approved_vocab_list, diffi
 
 위 조건에 맞춰 정확히 30문항의 JSON을 생성하세요."""
 
-    raw = _call_claude(client, model, system_prompt, user_prompt, max_tokens=8000)
+    raw = _call_openai(client, model, system_prompt, user_prompt, max_tokens=8000)
     data = _extract_json(raw)
 
     if not isinstance(data, dict) or "questions" not in data:

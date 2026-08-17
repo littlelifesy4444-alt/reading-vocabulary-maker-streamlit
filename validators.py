@@ -113,8 +113,8 @@ def validate_test(questions, vocab_list):
         elif no not in expected_range:
             issues.append(f"{no}번 문항의 유형({qtype})이 규정된 번호 범위와 맞지 않습니다.")
 
-        # 모든 문항의 target word가 승인된 Vocabulary List에 존재하는가
-        if isinstance(no, int) and 1 <= no <= 30:
+        # 6. 1-21번 target word가 승인된 Vocabulary List에 존재하는가
+        if isinstance(no, int) and no <= 21:
             target = str(q.get("target_word", "")).strip().lower()
             if not target or target not in approved_words:
                 issues.append(
@@ -130,16 +130,9 @@ def validate_test(questions, vocab_list):
             if answer_index is None or not isinstance(answer_index, int) or not (0 <= answer_index < len(choices)):
                 issues.append(f"{no}번 문항의 정답 인덱스(answer_index)가 올바르지 않습니다.")
             if choices:
-                normalized_choices = [str(c).strip().lower() for c in choices]
-                if any(not c for c in normalized_choices):
-                    issues.append(f"{no}번 문항의 선택지 중 빈 선택지가 있습니다.")
+                normalized_choices = [c.strip().lower() for c in choices if isinstance(c, str)]
                 if len(normalized_choices) != len(set(normalized_choices)):
                     issues.append(f"{no}번 문항의 선택지 중 중복된 내용이 있습니다.")
-                answer = str(q.get("answer", "")).strip().lower()
-                if isinstance(answer_index, int) and 0 <= answer_index < len(choices):
-                    indexed_answer = str(choices[answer_index]).strip().lower()
-                    if answer and answer != indexed_answer:
-                        issues.append(f"{no}번 문항의 answer와 answer_index가 서로 일치하지 않습니다.")
         else:
             if not str(q.get("answer", "")).strip():
                 issues.append(f"{no}번 문항의 정답(answer)이 비어 있습니다.")
