@@ -156,9 +156,9 @@ def build_vocab_list_docx(title, vocab_list):
     doc = _new_document()
     _add_title(doc, title, "Vocabulary List")
 
-    headers = ["No.", "Word / Expression", "Pronunciation", "POS", "Meaning",
-               "Synonym", "Antonym", "New Example", "Source", "Imp."]
-    widths = [0.9, 2.3, 1.9, 1.1, 2.6, 1.4, 1.4, 3.0, 1.4, 0.9]
+    headers = ["No.", "Word / Expression", "Pronunciation / POS", "Meaning",
+               "Synonym / Antonym", "New Example"]
+    widths = [0.9, 2.5, 2.3, 3.0, 2.5, 4.0]
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -170,20 +170,16 @@ def build_vocab_list_docx(title, vocab_list):
 
     for i, item in enumerate(vocab_list, start=1):
         row_cells = table.add_row().cells
-        values = [
+                values = [
             i,
             item.get("word", ""),
-            item.get("pronunciation", ""),
-            item.get("pos", ""),
+            f'{item.get("pronunciation", "")} / {item.get("pos", "")}',
             item.get("meaning", ""),
-            item.get("synonym", "-") or "-",
-            item.get("antonym", "-") or "-",
+            f'{item.get("synonym", "-") or "-"} / {item.get("antonym", "-") or "-"}',
             item.get("new_example", ""),
-            item.get("source", ""),
-            item.get("importance", ""),
         ]
         for col_idx, v in enumerate(values):
-            align = WD_ALIGN_PARAGRAPH.CENTER if col_idx in (0, 3, 9) else None
+            align = WD_ALIGN_PARAGRAPH.CENTER if col_idx in (0, 2) else None
             _set_cell_text(row_cells[col_idx], v, align=align)
 
     _set_column_widths(table, widths)
